@@ -9,6 +9,8 @@ def add_gaussian_noise(img, mean, std):
 
 if __name__ == '__main__':
     from PIL import Image
+    import numpy as np
+    import matplotlib.pyplot as plt
 
     FILEPATH = "./data/pokemon/2.png"
     OUTFILE = "./test.png"
@@ -19,9 +21,11 @@ if __name__ == '__main__':
         T.ConvertImageDtype(torch.float)
     ])(img)
 
-    for i in tqdm(range(1)):
-        img = add_gaussian_noise(img, 0, 0.01)
+    for i in tqdm(range(50)):
+        img = add_gaussian_noise(img, 0, 0.05)
 
-    img = T.ToPILImage()(img)
+    img = np.array(img)
+    img = np.swapaxes(img, 0, 1)
+    img = np.swapaxes(img, 1, 2)
 
-    img.save(OUTFILE)
+    plt.imsave(OUTFILE, np.clip(img, 0, 1))

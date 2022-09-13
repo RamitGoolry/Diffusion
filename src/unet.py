@@ -1,23 +1,21 @@
-from turtle import forward
 import torch
 import torch.nn as nn
 
 import torchvision.transforms as T
-
 from icecream import ic
 
 class ConvBlock(nn.Module):
-    def __init__(self, in_c, out_c):
+    def __init__(self, in_channels, out_channels):
         super().__init__()
 
-        self.conv1 = nn.Conv2d(in_c, out_c, kernel_size=3, padding=1)
-        self.bn1 = nn.BatchNorm2d(out_c)
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_channels)
 
-        self.conv2 = nn.Conv2d(out_c, out_c, kernel_size=3, padding=1)
-        self.bn2 = nn.BatchNorm2d(out_c)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
 
         self.relu = nn.ReLU()
-    
+
     def forward(self, inputs):
         x = self.conv1(inputs)
         # x = self.bn1(x) # TODO
@@ -28,7 +26,6 @@ class ConvBlock(nn.Module):
         x = self.relu(x)
 
         return x
-
 
 class Encoder(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -52,7 +49,7 @@ class Decoder(nn.Module):
         self.upscale = nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=2, stride=2, padding=0)
         self.conv = ConvBlock(out_channels + out_channels, out_channels)
 
-    
+
     def forward(self, inputs, skip):
         x = self.upscale(inputs)
         ic(inputs.shape, x.shape, skip.shape)
