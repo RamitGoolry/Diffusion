@@ -21,7 +21,7 @@ LR = 1e-4
 def train():
     run = wandb.init(project='UNetAutoEncoder', entity='stable-diff-ramit-baily')
 
-    unet = UNet()
+    unet = UNet(features=(16, 32, 64, 128))
 
     DATAPATH = "./data/"
     transform = T.Compose([
