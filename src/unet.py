@@ -50,7 +50,7 @@ class Decoder(nn.Module):
 
     def forward(self, inputs, skip):
         x = self.upscale(inputs)
-        x = torch.cat([x, skip], axis = 0)
+        x = torch.cat([x, skip], axis = 1)
         x = self.conv(x)
 
         return x
@@ -88,7 +88,6 @@ class UNet(nn.Module):
 
         img = self.final_conv(img)
 
-        ic(img.shape)
         return img
 
 if __name__ == '__main__':
@@ -96,7 +95,7 @@ if __name__ == '__main__':
 
     from PIL import Image
 
-    FILEPATH = "./data/pokemon/2.png"
+    FILEPATH = "./data/pokemon/1.png"
     OUTFILE = "./test.png"
 
     img = Image.open(FILEPATH)
