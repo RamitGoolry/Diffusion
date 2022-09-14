@@ -6,7 +6,7 @@ from icecream import ic
 
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super().__init__()
+        super(ConvBlock, self).__init__()
 
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(out_channels)
@@ -29,7 +29,7 @@ class ConvBlock(nn.Module):
 
 class Encoder(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super().__init__()
+        super(Encoder, self).__init__()
 
         self.conv = ConvBlock(in_channels, out_channels) 
         self.pool = nn.MaxPool2d(kernel_size=2)
@@ -38,13 +38,11 @@ class Encoder(nn.Module):
         x = self.conv(x)
         p = self.pool(x)
 
-        ic(x.shape, p.shape)
-
         return x, p
 
 class Decoder(nn.Module):
     def __init__(self, in_channels, out_channels):
-        super().__init__()
+        super(Decoder, self).__init__()
 
         self.upscale = nn.ConvTranspose2d(in_channels=in_channels, out_channels=out_channels, kernel_size=2, stride=2, padding=0)
         self.conv = ConvBlock(out_channels + out_channels, out_channels)
@@ -52,41 +50,46 @@ class Decoder(nn.Module):
 
     def forward(self, inputs, skip):
         x = self.upscale(inputs)
-        ic(inputs.shape, x.shape, skip.shape)
-
-        x = torch.cat([x, skip], axis = 1)
+        x = torch.cat([x, skip], axis = 0)
         x = self.conv(x)
 
-        ic(x.shape)
+        return x
 
 class UNet(nn.Module):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, features = (16, 32, 64), in_channels = 3, out_channels = 3):
+        super(UNet, self).__init__()
 
         # 256 x 256 x 3
-        self.block1 = Encoder(3, 16)
-        self.block2 = Encoder(16, 32)
-        self.block3 = Encoder(32, 64)
+        self.encoders = nn.ModuleList() 
+        self.decoders = nn.ModuleList()
 
-        self.block3_inv = Decoder(64, 32)
-        self.block2_inv = Decoder(32, 16)
-        self.block1_inv = Decoder(16, 3)
+        for feature in features:
+            self.encoders.append(Encoder(in_channels, feature))
+            in_channels = feature
 
-        self.relu = nn.ReLU()
+        for feature in reversed(features):
+            self.decoders.append(Decoder(feature * 2, feature))
+
+        self.bottleneck = ConvBlock(features[-1], features[-1] * 2)
+        self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1, stride=1, padding=0)
 
     def forward(self, img):
-        x1, p1 = self.block1(img)
-        x1, p1 = self.relu(x1), self.relu(p1)
+        skips = []
 
-        x2, p2 = self.block2(p1)
-        x2, p2 = self.relu(x2), self.relu(p2)
+        for encoder in self.encoders:
+            skip, img = encoder(img)
+            skips.append(skip)
 
-        x3, p3 = self.block3(p2)
-        x3, p3 = self.relu(x3), self.relu(p3)
+        img = self.bottleneck(img)
 
-        x3_inv = self.block3_inv(x3, p3)
 
-        return x3
+        for decoder, skip in zip(self.decoders, reversed(skips)):
+            img = decoder(img, skip)
+
+        img = self.final_conv(img)
+
+        ic(img.shape)
+        return img
 
 if __name__ == '__main__':
     unet = UNet()
@@ -102,6 +105,14 @@ if __name__ == '__main__':
         T.ConvertImageDtype(torch.float)
     ])(img)
 
-    ic(img.shape)
-
     ret = unet(img)
+
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    ret = ret.detach().numpy()
+    ret = np.swapaxes(ret, 0, 1)
+    ret = np.swapaxes(ret, 1, 2)
+
+
+    plt.imsave(OUTFILE, np.clip(ret, 0, 1))
