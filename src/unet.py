@@ -18,11 +18,11 @@ class ConvBlock(nn.Module):
 
     def forward(self, inputs):
         x = self.conv1(inputs)
-        x = self.bn1(x) 
+        x = self.bn1(x)
         x = self.relu(x)
 
         x = self.conv2(x)
-        x = self.bn2(x) 
+        x = self.bn2(x)
         x = self.relu(x)
 
         return x
@@ -31,7 +31,7 @@ class Encoder(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(Encoder, self).__init__()
 
-        self.conv = ConvBlock(in_channels, out_channels) 
+        self.conv = ConvBlock(in_channels, out_channels)
         self.pool = nn.MaxPool2d(kernel_size=2)
 
     def forward(self, x):
@@ -60,7 +60,7 @@ class UNet(nn.Module):
         super(UNet, self).__init__()
 
         # 256 x 256 x 3
-        self.encoders = nn.ModuleList() 
+        self.encoders = nn.ModuleList()
         self.decoders = nn.ModuleList()
 
         for feature in features:
@@ -72,6 +72,8 @@ class UNet(nn.Module):
 
         self.bottleneck = ConvBlock(features[-1], features[-1] * 2)
         self.final_conv = nn.Conv2d(features[0], out_channels, kernel_size=1, stride=1, padding=0)
+
+        self.sigmoid = nn.Sigmoid()
 
     def forward(self, img):
         skips = []
@@ -88,7 +90,7 @@ class UNet(nn.Module):
 
         img = self.final_conv(img)
 
-        return img
+        return self.sigmoid(img)
 
 if __name__ == '__main__':
     unet = UNet()
