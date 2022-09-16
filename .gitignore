@@ -1,2 +1,4 @@
 data/
 test.png
+src/__pycache__/
+wandb/
