@@ -1,4 +1,4 @@
-from unet import UNet
+from modules.unet import UNet
 
 import torch
 from torch.optim import Adam
