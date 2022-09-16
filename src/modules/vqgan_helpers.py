@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from icecream import ic
-
 class GroupNorm(nn.Module):
     '''
     Group Normalization Layer
