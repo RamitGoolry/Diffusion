@@ -1,4 +1,7 @@
-default: unet 
+default: train_unet
+
+train_unet:
+	python3 src/train_unet.py
 
 unet:
 	python3 src/unet.py
