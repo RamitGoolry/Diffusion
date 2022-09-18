@@ -107,12 +107,14 @@ class NonLocalBlock(nn.Module):
 
         batch, channels, height, width = q.shape
 
+        # Reshape data to fit attention mechanism
         q = q.reshape(batch, channels, height*width)
         q = q.permute(0, 2, 1)
         
         k = k.reshape(batch, channels, height*width)
         v = v.reshape(batch, channels, height*width)
 
+        # Attention Mechanism
         # A = softmax(Q * K.T / sqrt(d_k)) * V
 
         attn = torch.bmm(q, k)
