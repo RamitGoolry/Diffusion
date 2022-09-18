@@ -1,3 +1,4 @@
+from codecs import EncodedFile
 import torch
 import torch.nn as nn
 from vqgan_helpers import ResidualBlock, NonLocalBlock, DownSampleBlock, UpSampleBlock, GroupNorm, Swish
@@ -115,3 +116,66 @@ class Codebook(nn.Module):
         z_q = z_q.permute(0, 3, 1, 2)
 
         return z_q, min_encoding_indices, loss
+
+class VQGAN(nn.Module):
+    def __init__(self, args, device):
+        super(VQGAN, self).__init__()
+
+        self.encoder = VQGANEncoder(args).to(device=device)
+        self.decoder = VQGANDecoder(args).to(device=device)
+        self.codebook = Codebook(args).to(device=device)
+
+        self.quant_conv = nn.Conv2d(args.latent_dim, args.latent_dim, 1).to(device=device)
+        self.post_quant_conv = nn.Conv2d(args.latent_dim, args.latent_dim, 1).to(device=device)
+
+    def forward(self, imgs):
+        encoded_imgs = self.encoder(imgs)
+        quant_conv_encoded_imgs = self.quant_conv(encoded_imgs)
+
+        codebook_mapping, codebook_indices, q_loss = self.codebook(quant_conv_encoded_imgs)
+
+        post_quant_conv_mapping = self.post_quant_conv(codebook_mapping)
+        decoded_images = self.decoder(post_quant_conv_mapping)
+
+        return decoded_images, codebook_indices, q_loss
+    
+    def encode(self, imgs):
+        encoded_imgs = self.encoder(imgs)
+        quant_conv_encoded_imgs = self.quant_conv(encoded_imgs)
+
+        codebook_mapping, codebook_indices, q_loss = self.codebook(quant_conv_encoded_imgs)
+        return codebook_mapping, codebook_indices, q_loss
+
+    def decode(self, z):
+        post_quant_conv_mapping = self.post_quant_conv(z)
+        decoded_images = self.decoder(post_quant_conv_mapping)
+        return decoded_images
+
+    EPSILON = 1e-6
+    
+    def calculate_lambda(self, perceptual_loss, gan_loss):
+        last_layer = self.decoder.model[-1]
+
+        # TODO Check if there is a need to create a new var "last_layer_weight" here
+        # Only issue would be if there is a de
+
+        perceptual_loss_grads = torch.autograd.grad(
+            perceptual_loss, last_layer.weight, retain_graph=True
+        )[0]
+        gan_loss_grads = torch.autograd.grad(
+            gan_loss, last_layer.weight, retain_graph=True
+        )[0]
+
+        λ = torch.norm(perceptual_loss_grads) / (torch.norm(gan_loss_grads) + VQGAN.EPSILON)
+        λ = torch.clamp(λ, 0, 1e4).detach()
+
+        return 0.8 * λ
+    
+    @staticmethod
+    def adopt_weight(disc_factor, i, threshold, value=0.):
+        if i < threshold:
+            disc_factor = value
+        return disc_factor
+
+    def load_checkpoint(self, path):
+        self.load_state_dict(torch.load(path))
