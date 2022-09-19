@@ -1,4 +1,3 @@
-from codecs import EncodedFile
 import torch
 import torch.nn as nn
 from vqgan_helpers import ResidualBlock, NonLocalBlock, DownSampleBlock, UpSampleBlock, GroupNorm, Swish
@@ -117,6 +116,36 @@ class Codebook(nn.Module):
 
         return z_q, min_encoding_indices, loss
 
+class Discriminator(nn.Module):
+    def __init__(self, args, num_filters_last = 64, n_layers = 3):
+        super(Discriminator, self).__init__()
+
+        layers = [
+            nn.Conv2d(args.image_channels, num_filters_last, 4, 2, 1),
+            nn.LeakyReLU(0.2)
+        ]
+
+        num_filters_mult = 1
+
+        for i in range(1, n_layers + 1):
+            num_filters_mult_last = num_filters_mult
+            num_filters_mult = min(2 ** i, 8)
+
+            layers += [
+                nn.Conv2d(num_filters_last * num_filters_mult_last, num_filters_last * num_filters_mult, 
+                    4, 2 if i < n_layers else 1, 1, bias=False),
+                nn.BatchNorm2d(num_filters_last * num_filters_mult),
+                nn.LeakyReLU(0.2, True)
+            ]
+        
+        layers.append(
+            nn.Conv2d(num_filters_last * num_filters_mult, 1, 4, 1, 1)
+        )
+        self.model = nn.Sequential(*layers)
+    
+    def forward(self, x):
+        return self.model(x)
+
 class VQGAN(nn.Module):
     def __init__(self, args, device):
         super(VQGAN, self).__init__()
@@ -151,13 +180,13 @@ class VQGAN(nn.Module):
         decoded_images = self.decoder(post_quant_conv_mapping)
         return decoded_images
 
-    EPSILON = 1e-6
+    DELTA = 1e-6
     
     def calculate_lambda(self, perceptual_loss, gan_loss):
         last_layer = self.decoder.model[-1]
 
         # TODO Check if there is a need to create a new var "last_layer_weight" here
-        # Only issue would be if there is a de
+        # Only issue would be if there is a deep copy that changes the weights
 
         perceptual_loss_grads = torch.autograd.grad(
             perceptual_loss, last_layer.weight, retain_graph=True
@@ -166,7 +195,7 @@ class VQGAN(nn.Module):
             gan_loss, last_layer.weight, retain_graph=True
         )[0]
 
-        λ = torch.norm(perceptual_loss_grads) / (torch.norm(gan_loss_grads) + VQGAN.EPSILON)
+        λ = torch.norm(perceptual_loss_grads) / (torch.norm(gan_loss_grads) + VQGAN.DELTA)
         λ = torch.clamp(λ, 0, 1e4).detach()
 
         return 0.8 * λ

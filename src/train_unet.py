@@ -52,6 +52,8 @@ def train():
                 imgs = imgs[0]
                 imgs = imgs.cuda()
 
+                optimizer.zero_grad()
+
                 outputs = unet(imgs)
 
                 loss = criterion(outputs, imgs)

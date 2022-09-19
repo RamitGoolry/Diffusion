@@ -2,8 +2,6 @@ import torch
 import torchvision.transforms as T
 from tqdm import tqdm
 
-from icecream import ic
-
 def add_gaussian_noise(img, mean, std):
     return img + torch.normal(mean, std, size=img.shape)
 
