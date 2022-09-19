@@ -66,8 +66,8 @@ class NetLinLayer(nn.Module):
 class ScalingLayer(nn.Module):
     def __init__(self):
         super(ScalingLayer, self).__init__()
-        self.register_buffer("shift", torch.tensor([-.030, -.088, -.188][None, :, None, None]))
-        self.register_buffer("scale", torch.tensor([.458, .448, .450][None, :, None, None]))
+        self.register_buffer("shift", torch.tensor([-.030, -.088, -.188])[None, :, None, None])
+        self.register_buffer("scale", torch.tensor([.458, .448, .450])[None, :, None, None])
     
     def forward(self, x):
         return (x  - self.shift) / self.scale

@@ -1,4 +1,7 @@
-default: train_unet
+default: train_vqgan
+
+train_vqgan:
+	python3 src/train_vqgan.py
 
 train_unet:
 	python3 src/train_unet.py

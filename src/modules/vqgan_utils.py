@@ -39,9 +39,9 @@ class ImagePaths(Dataset):
     def __getitem__(self, i):
         return self.preprocess_image(self.images[i]) 
 
-def load_data(args):
-    train_data = ImagePaths(args.dataset_path, size=256)
-    train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
+def load_data(config):
+    train_data = ImagePaths(config.dataset_path, size=256)
+    train_loader = DataLoader(train_data, batch_size=config.batch_size, shuffle=True)
     return train_loader
 
 # -------------------------------------------- #
