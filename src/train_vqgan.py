@@ -7,7 +7,7 @@ from modules.lpips import LPIPS
 from modules.vqgan import VQGAN, Discriminator
 from modules.vqgan_utils import load_data, weights_init
 
-from icecream import ic
+import wandb
 
 class dotdict(dict):
     """
@@ -41,14 +41,15 @@ class VQGAN_Trainer:
     def __init__(self, config, device):
         self.device = device
 
+        self.run = wandb.init(project='VQGAN Training', entity='stable-diff-ramit-baily', config=config, notes="No Inference images yet.")
+        self.config = self.run.config
+
         self.vqgan = VQGAN(config, device).to(device)
         self.discriminator = Discriminator(config).bfloat16().to(device)
         self.discriminator.apply(weights_init)
 
         self.perceptual_loss = LPIPS().eval().to(device)
         self.opt_vq, self.opt_disc = self.configure_optimizers(config)
-
-        self.config = config
 
     def configure_optimizers(self, config):
         opt_vq = torch.optim.Adam(
@@ -120,6 +121,11 @@ class VQGAN_Trainer:
                     VQ_Loss = avg_vq_loss / len(train_dataset),
                     GAN_Loss = avg_gan_loss / len(train_dataset)
                 )
+
+                self.run.log({
+                    'VQ_Loss' : avg_vq_loss / len(train_dataset),
+                    'GAN_Loss' : avg_gan_loss / len(train_dataset)
+                })
 
 def main():
     trainer = VQGAN_Trainer(config, device)
