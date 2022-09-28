@@ -6,6 +6,7 @@ from collections import namedtuple
 import requests
 from tqdm import tqdm
 
+from icecream import ic
 
 URL_MAP = {
     "vgg_lpips": "https://heibox.uni-heidelberg.de/f/607503859c864bc1b30b/?dl=1"
@@ -128,11 +129,20 @@ class LPIPS(nn.Module):
         self.load_state_dict(torch.load(ckpt, map_location=torch.device("cpu")), strict=False)
 
     def forward(self, real_x, fake_x):
+        # ic(real_x.shape)
+        # ic(fake_x.shape)
+
         features_real = self.vgg(self.scaling_layer(real_x))
         features_fake = self.vgg(self.scaling_layer(fake_x))
         diffs = {}
 
+        # ic([features_real[i].shape for i in range(len(features_real))])
+        # ic([features_fake[i].shape for i in range(len(features_fake))])
+
         for i in range(len(self.channels)):
+            # ic(i)
+            # ic(norm_tensor(features_real[i]).shape)
+            # ic(norm_tensor(features_fake[i]).shape)
             diffs[i] = (norm_tensor(features_real[i]) - norm_tensor(features_fake[i])) ** 2
 
         return sum([spatial_average(self.lins[i].model(diffs[i])) for i in range(len(self.channels))])

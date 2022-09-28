@@ -65,8 +65,10 @@ class UpSampleBlock(nn.Module):
 
         self.conv = nn.Conv2d(channels, channels, 3, 1, 1)
     
-    def forward(self, x):
+    def forward(self, x : torch.Tensor):
+        x = x.float()
         x = F.interpolate(x, scale_factor=2.0)
+        x = x.bfloat16()
         return self.conv(x)
     
 class DownSampleBlock(nn.Module):
@@ -118,7 +120,7 @@ class NonLocalBlock(nn.Module):
         # A = softmax(Q * K.T / sqrt(d_k)) * V
 
         attn = torch.bmm(q, k)
-        attn = attn * (int(channels) ** (-0.5))
+        attn *= (int(channels) ** (-0.5))
         attn = F.softmax(attn, dim=2)
         attn = attn.permute(0, 2, 1)
 

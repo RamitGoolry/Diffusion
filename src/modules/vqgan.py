@@ -2,11 +2,14 @@ import torch
 import torch.nn as nn
 from .vqgan_helpers import ResidualBlock, NonLocalBlock, DownSampleBlock, UpSampleBlock, GroupNorm, Swish
 
+from icecream import ic
+from torchsummary import summary
+
 class VQGANEncoder(nn.Module):
     def __init__(self, config):
         super(VQGANEncoder, self).__init__()
 
-        channels = [128, 128, 128, 256, 256, 512] # TODO Parameterize
+        channels = [128, 256, 256] # TODO Parameterize
         attn_resolutions = [16]
 
         num_res_blocks = 2
@@ -47,10 +50,10 @@ class VQGANDecoder(nn.Module):
     def __init__(self, config):
         super(VQGANDecoder, self).__init__()
 
-        channels = [512, 256, 256, 128, 128, 128] # TODO Parameterize
+        channels = [256, 256, 128] # TODO Parameterize
         attn_resolutions = [16]
 
-        num_res_blocks = 3
+        num_res_blocks = 2
         resolution = 16
 
         in_channels = channels[0]
@@ -71,7 +74,7 @@ class VQGANDecoder(nn.Module):
                 if resolution in attn_resolutions:
                     layers.append(NonLocalBlock(in_channels))
 
-            if i != 0:
+            if i > 1:
                 layers.append(UpSampleBlock(in_channels))
                 resolution *= 2
 
@@ -142,7 +145,7 @@ class Discriminator(nn.Module):
             nn.Conv2d(num_filters_last * num_filters_mult, 1, 4, 1, 1)
         )
         self.model = nn.Sequential(*layers)
-    
+
     def forward(self, x):
         return self.model(x)
 
@@ -150,12 +153,12 @@ class VQGAN(nn.Module):
     def __init__(self, config, device):
         super(VQGAN, self).__init__()
 
-        self.encoder = VQGANEncoder(config).to(device=device)
-        self.decoder = VQGANDecoder(config).to(device=device)
-        self.codebook = Codebook(config).to(device=device)
+        self.encoder = VQGANEncoder(config).bfloat16().to(device=device)
+        self.decoder = VQGANDecoder(config).bfloat16().to(device=device)
+        self.codebook = Codebook(config).bfloat16().to(device=device)
 
-        self.quant_conv = nn.Conv2d(config.latent_dim, config.latent_dim, 1).to(device=device)
-        self.post_quant_conv = nn.Conv2d(config.latent_dim, config.latent_dim, 1).to(device=device)
+        self.quant_conv = nn.Conv2d(config.latent_dim, config.latent_dim, 1).bfloat16().to(device=device)
+        self.post_quant_conv = nn.Conv2d(config.latent_dim, config.latent_dim, 1).bfloat16().to(device=device)
 
     def forward(self, imgs):
         encoded_imgs = self.encoder(imgs)

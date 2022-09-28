@@ -1,11 +1,7 @@
-from distutils.command.config import config
-import os
-import argparse
 from tqdm import tqdm
 import numpy as np
 import torch
 import torch.nn.functional as F
-from torchvision import utils as vutils
 
 from modules.lpips import LPIPS
 from modules.vqgan import VQGAN, Discriminator
@@ -24,21 +20,21 @@ class dotdict(dict):
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
 config = dotdict({
-    'latent_dim' : 256, # Latent Dimension
-    'image_size' : 256, # Image Size,
-    "num_codebook_vectors" : 1024, # Number of Codebook Vectors
-    "beta" : 0.25,
-    "image_channels" : 3,
-    "dataset_path" : "data/pokemon",
-    "batch_size" : 6,
-    "epochs" : 100,
-    "learning_rate" : 2.25e-5,
-    "beta1" : 0.5,   # Adam beta1
-    "beta2" : 0.999, # Adam beta2
-    "disc_start" : 10000,
-    "disc_factor" : 1.,
-    "rec_loss_factor" : 1.,
-    "perceptual_loss_factor" : 1.
+    'latent_dim' : 256,              # Latent Dimension
+    'image_size' : 256,              # Image Size
+    "num_codebook_vectors" : 1024,   # Number of Codebook Vectors
+    "beta" : 0.25,                   # 
+    "image_channels" : 3,            # Number of Image Channels
+    "dataset_path" : "data/pokemon", # Path to the dataset
+    "batch_size" : 1,                # Batch Size
+    "epochs" : 100,                  # Epochs
+    "learning_rate" : 2.25e-5,       # Learning Rate for both optimizers
+    "beta1" : 0.5,                   # Adam beta1
+    "beta2" : 0.999,                 # Adam beta2
+    "disc_start" : 10000,            # Step at which discriminator will start
+    "disc_factor" : 1.,              # Weight of discriminator
+    "rec_loss_factor" : 1.,          # Reconstruction Loss weight
+    "perceptual_loss_factor" : 1.    # Perceptual Loss Weight
 })
 
 class VQGAN_Trainer:
@@ -46,7 +42,7 @@ class VQGAN_Trainer:
         self.device = device
 
         self.vqgan = VQGAN(config, device).to(device)
-        self.discriminator = Discriminator(config).to(device)
+        self.discriminator = Discriminator(config).bfloat16().to(device)
         self.discriminator.apply(weights_init)
 
         self.perceptual_loss = LPIPS().eval().to(device)
@@ -69,7 +65,7 @@ class VQGAN_Trainer:
         )
 
         return opt_vq, opt_disc
-    
+
     def train(self):
         train_dataset = load_data(config)
         steps_per_epoch = len(train_dataset)
@@ -78,9 +74,9 @@ class VQGAN_Trainer:
             for epoch in pbar:
                 avg_vq_loss = 0
                 avg_gan_loss = 0
-                
-                for i, imgs in enumerate(train_dataset):
-                    imgs = imgs.to(self.device)
+
+                for i, imgs in tqdm(enumerate(train_dataset), total=len(train_dataset), leave=False):
+                    imgs = imgs.bfloat16().to(self.device)
 
                     decoded_imgs, _, q_loss = self.vqgan(imgs)
 
@@ -97,7 +93,7 @@ class VQGAN_Trainer:
 
                     perceptual_rec_loss = self.config.perceptual_loss_factor * perceptual_loss + \
                         self.config.rec_loss_factor * rec_loss
-                    
+
                     perceptual_rec_loss = perceptual_rec_loss.mean()
                     g_loss = -torch.mean(disc_fake)
 
@@ -117,9 +113,9 @@ class VQGAN_Trainer:
                     self.opt_vq.step()
                     self.opt_disc.step()
 
-                    avg_vq_loss += vq_loss.cpu().detach().numpy()
-                    avg_gan_loss += gan_loss.cpu().detach.numpy()
-                
+                    avg_vq_loss += vq_loss.cpu().detach().type(torch.float32).numpy()
+                    avg_gan_loss += gan_loss.cpu().detach().type(torch.float32).numpy()
+
                 pbar.set_postfix(
                     VQ_Loss = avg_vq_loss / len(train_dataset),
                     GAN_Loss = avg_gan_loss / len(train_dataset)
