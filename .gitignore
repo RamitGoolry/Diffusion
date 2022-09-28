@@ -1,4 +1,5 @@
 data/
 test.png
-src/__pycache__/
+**/__pycache__/
 wandb/
+vgg_lpips/
