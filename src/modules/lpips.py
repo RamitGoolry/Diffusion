@@ -1,6 +1,7 @@
 import os
 import torch
 import torch.nn as nn
+import torchvision
 from torchvision.models import vgg16
 from collections import namedtuple
 import requests
@@ -69,7 +70,7 @@ class ScalingLayer(nn.Module):
         super(ScalingLayer, self).__init__()
         self.register_buffer("shift", torch.tensor([-.030, -.088, -.188])[None, :, None, None])
         self.register_buffer("scale", torch.tensor([.458, .448, .450])[None, :, None, None])
-    
+
     def forward(self, x):
         return (x  - self.shift) / self.scale
 
@@ -77,7 +78,7 @@ class VGG16(nn.Module):
     def __init__(self):
         super(VGG16, self).__init__()
 
-        vgg_pretrained_features = vgg16(pretrained = True).features
+        vgg_pretrained_features = vgg16(weights = torchvision.models.VGG16_Weights.DEFAULT).features
         slices = [vgg_pretrained_features[i] for i in range(30)]
 
         self.slice1 = nn.Sequential(*slices[0:4])
@@ -88,7 +89,7 @@ class VGG16(nn.Module):
 
         for param in self.parameters():
             param.requires_grad = False
-        
+
     def forward(self, x):
         h = self.slice1(x)
         h_relu1 = h

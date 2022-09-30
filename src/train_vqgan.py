@@ -27,7 +27,7 @@ config = dotdict({
     "image_channels" : 3,            # Number of Image Channels
     "dataset_path" : "data/pokemon", # Path to the dataset
     "batch_size" : 1,                # Batch Size
-    "epochs" : 100,                  # Epochs
+    "epochs" :  50,                  # Epochs
     "learning_rate" : 2.25e-5,       # Learning Rate for both optimizers
     "beta1" : 0.5,                   # Adam beta1
     "beta2" : 0.999,                 # Adam beta2
