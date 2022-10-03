@@ -7,6 +7,8 @@ from modules.lpips import LPIPS
 from modules.vqgan import VQGAN, Discriminator
 from modules.vqgan_utils import load_data, weights_init
 
+from icecream import ic
+
 import wandb
 
 class dotdict(dict):
@@ -20,18 +22,18 @@ class dotdict(dict):
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
 config = dotdict({
-    'latent_dim' : 256,              # Latent Dimension
-    'image_size' : 256,              # Image Size
-    "num_codebook_vectors" : 1024,   # Number of Codebook Vectors
+    'latent_dim' : 512,              # Latent Dimension
+    'image_size' : 128,              # Image Size
+    "num_codebook_vectors" : 2048,   # Number of Codebook Vectors
     "beta" : 0.25,                   # 
     "image_channels" : 3,            # Number of Image Channels
     "dataset_path" : "data/pokemon", # Path to the dataset
     "batch_size" : 1,                # Batch Size
-    "epochs" :  50,                  # Epochs
+    "epochs" :  100,                  # Epochs
     "learning_rate" : 2.25e-5,       # Learning Rate for both optimizers
     "beta1" : 0.5,                   # Adam beta1
     "beta2" : 0.999,                 # Adam beta2
-    "disc_start" : 10000,            # Step at which discriminator will start
+    "disc_start" : 5000,            # Step at which discriminator will start
     "disc_factor" : 1.,              # Weight of discriminator
     "rec_loss_factor" : 1.,          # Reconstruction Loss weight
     "perceptual_loss_factor" : 1.    # Perceptual Loss Weight
@@ -116,6 +118,17 @@ class VQGAN_Trainer:
 
                     avg_vq_loss += vq_loss.cpu().detach().type(torch.float32).numpy()
                     avg_gan_loss += gan_loss.cpu().detach().type(torch.float32).numpy()
+
+                    if i % 50 == 0:
+                        with torch.no_grad():
+                            real_image = imgs[:4]
+                            fake_image = decoded_imgs.add(1).mul(0.5)[:4]
+                            self.run.log({
+                                "Real Image" : wandb.Image(real_image[0]),
+                                "Fake Image" : wandb.Image(fake_image[0]),
+                                "VQ_Loss Immediate" : vq_loss.cpu().detach().type(torch.float32).numpy(),
+                                "GAN_Loss Immediate" : gan_loss.cpu().detach().type(torch.float32).numpy()
+                            })
 
                 pbar.set_postfix(
                     VQ_Loss = avg_vq_loss / len(train_dataset),
