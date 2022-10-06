@@ -22,18 +22,18 @@ class dotdict(dict):
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
 config = dotdict({
-    'latent_dim' : 1024,              # Latent Dimension
+    'latent_dim' : 1024,             # Latent Dimension
     'image_size' : 128,              # Image Size
     "num_codebook_vectors" : 2048,   # Number of Codebook Vectors
     "beta" : 0.25,                   # 
     "image_channels" : 3,            # Number of Image Channels
     "dataset_path" : "data/pokemon", # Path to the dataset
     "batch_size" : 1,                # Batch Size
-    "epochs" :  100,                  # Epochs
+    "epochs" :  100,                 # Epochs
     "learning_rate" : 2.25e-5,       # Learning Rate for both optimizers
     "beta1" : 0.5,                   # Adam beta1
     "beta2" : 0.999,                 # Adam beta2
-    "disc_start" : 5000,            # Step at which discriminator will start
+    "disc_start" : 5000,             # Step at which discriminator will start
     "disc_factor" : 1.,              # Weight of discriminator
     "rec_loss_factor" : 1.,          # Reconstruction Loss weight
     "perceptual_loss_factor" : 1.    # Perceptual Loss Weight
@@ -126,8 +126,15 @@ class VQGAN_Trainer:
                             self.run.log({
                                 "Real Image" : wandb.Image(real_image[0]),
                                 "Fake Image" : wandb.Image(fake_image[0]),
-                                "VQ_Loss Immediate" : vq_loss.cpu().detach().type(torch.float32).numpy(),
-                                "GAN_Loss Immediate" : gan_loss.cpu().detach().type(torch.float32).numpy()
+
+                                "VQ_Loss" : vq_loss.cpu().detach().type(torch.float32).numpy(),
+                                "GAN_Loss" : gan_loss.cpu().detach().type(torch.float32).numpy(),
+                                "perceptual_rec_loss" : perceptual_rec_loss.cpu().detach().type(torch.float32).numpy(),
+                                "q_loss" : q_loss.cpu().detach().type(torch.float32).numpy(),
+                                "g_loss" : g_loss.cpu().detach().type(torch.float32).numpy(),
+                                "λ" : λ,
+                                "d_loss_real" : d_loss_real.cpu().detach().type(torch.float32).numpy(),
+                                "d_loss_fake" : d_loss_fake.cpu().detach().type(torch.float32).numpy(),
                             })
 
                 pbar.set_postfix(
@@ -136,8 +143,8 @@ class VQGAN_Trainer:
                 )
 
                 self.run.log({
-                    'VQ_Loss' : avg_vq_loss / len(train_dataset),
-                    'GAN_Loss' : avg_gan_loss / len(train_dataset)
+                    'Mean VQ_Loss' : avg_vq_loss / len(train_dataset),
+                    'Mean GAN_Loss' : avg_gan_loss / len(train_dataset)
                 })
 
 def main():

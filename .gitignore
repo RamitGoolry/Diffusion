@@ -1,4 +1,5 @@
 data/
+data_128x128/
 test.png
 **/__pycache__/
 wandb/
