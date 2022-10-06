@@ -22,7 +22,7 @@ class dotdict(dict):
 device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("cpu")
 
 config = dotdict({
-    'latent_dim' : 512,              # Latent Dimension
+    'latent_dim' : 1024,              # Latent Dimension
     'image_size' : 128,              # Image Size
     "num_codebook_vectors" : 2048,   # Number of Codebook Vectors
     "beta" : 0.25,                   # 
@@ -43,7 +43,7 @@ class VQGAN_Trainer:
     def __init__(self, config, device):
         self.device = device
 
-        self.run = wandb.init(project='VQGAN Training', entity='stable-diff-ramit-baily', config=config, notes="No Inference images yet.")
+        self.run = wandb.init(project='VQGAN Training', entity='stable-diff-ramit-baily', config=config, notes = input("Enter some notes about this run: "))
         self.config = self.run.config
 
         self.vqgan = VQGAN(config, device).to(device)
