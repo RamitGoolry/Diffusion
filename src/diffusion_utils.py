@@ -2,10 +2,8 @@ import torch
 import torchvision.transforms as T
 from tqdm import tqdm
 
-from icecream import ic
-
-def add_gaussian_noise(img, mean, std):
-    return img + torch.normal(mean, std, size=img.shape)
+def add_gaussian_noise(img, mean, std, device='cpu'):
+    return torch.clip(img + torch.normal(mean, std, size=img.shape).to(device), min=0, max=1)
 
 if __name__ == '__main__':
     from PIL import Image

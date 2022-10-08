@@ -1,4 +1,4 @@
-from unet import UNet
+from modules.unet import UNet
 
 import torch
 from torch.optim import Adam
@@ -51,6 +51,8 @@ def train():
             for i, imgs in enumerate(data_loader):
                 imgs = imgs[0]
                 imgs = imgs.cuda()
+
+                optimizer.zero_grad()
 
                 outputs = unet(imgs)
 
