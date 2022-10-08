@@ -24,7 +24,7 @@ device = torch.device("cuda:0") if torch.cuda.is_available() else torch.device("
 config = dotdict({
     'latent_dim' : 1024,             # Latent Dimension
     'image_size' : 128,              # Image Size
-    "num_codebook_vectors" : 1024,   # Number of Codebook Vectors
+    "num_codebook_vectors" : 4096,   # Number of Codebook Vectors
     "beta" : 0.25,                   # 
     "image_channels" : 3,            # Number of Image Channels
     "dataset_path" : "data/pokemon", # Path to the dataset

@@ -7,7 +7,7 @@ from pathlib import Path
 from icecream import ic
 
 SOURCE_DIR = './data/pokemon'
-DEST_DIR = './data_256x256/pokemon'
+DEST_DIR = './data_128x128/pokemon'
 
 def convert(source_path : str) -> bool:
     ic(source_path)
