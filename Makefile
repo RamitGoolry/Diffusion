@@ -1,4 +1,7 @@
-default: train_vqgan
+default: train_unet_diffusion
+
+train_unet_diffusion:
+	python3 src/train_unet_diffusion.py
 
 train_vqgan:
 	python3 src/train_vqgan.py

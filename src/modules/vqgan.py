@@ -113,6 +113,8 @@ class Codebook(nn.Module):
         z_q = self.embedding(min_encoding_indices).view(z.shape)
 
         loss = torch.mean((z_q.detach() - z) ** 2) + self.beta * torch.mean((z_q - z.detach()) ** 2)
+         # NOTE .detach() is essentially the stop-gradient operation : It fixes the gradients such that they can not be learned
+         # from on the iteration.
 
         z_q = z + (z_q - z).detach() # For Gradients, otherwise this is a no-op
         z_q = z_q.permute(0, 3, 1, 2)
